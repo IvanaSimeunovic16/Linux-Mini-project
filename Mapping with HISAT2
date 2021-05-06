@@ -1,0 +1,30 @@
+cd exercise/
+cd reads/
+fastq-dump --gzip SRR776421    # Downloading sequences in file named "reads"; adding gzip to have smaller files that take up less memory
+ls   # Check if we really downloaded the sequences (there should be two files - one containing F reads, other R reads)
+fastqc SRR776421.fastq.gz   # With this command we check the overall quality of the downloaded readings, the program makes a report
+firefox SRR776421_fastqc.html  # We open the report in the HTML browser firefox. We can see that there are no overrepresented sequences, but that there is a bad per tile sequence quality
+cd ..
+cd trimmed/  # We go to the new directory where our processed sequences will be located
+cutadapt -q 20,20 -m 20 \--length-tag 'length=' -o SRR776421.trimmed.fastq.gz ../reads/SRR776421.fastq.gz  # With the help of cutadapt, we perform quality trimming (both with 3 'and 5' ends), and then we remove sequences shorter than 20bp.We do this because if 15 of those 20bp were of poor quality, we will be left with 5nt for which we will not be sure from which part of the genome it comes (there is a possibility that this short sequence may be from different fragments of our DNA). We updated the length tag, added new sequence lengths and saved our file so we know clearly that these are trimmed sequences.
+fastqc SRR776421.trimmed.fastq.gz  # In this and the next step, we check the quality of the readings after trimming
+firefox SRR776421.trimmed_fastqc.html 
+cd ..
+ls
+cd genome/
+wget \https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/002/985/GCF_000002985.6_WBcel235/GCF_000002985.6_WBcel235_genomic.fna.gz  # Downloading the reference sequence in relation to which we perform the mapping
+ls
+gunzip GCF_000002985.6_WBcel235_genomic.fna.gz 
+hisat2-build GCF_000002985.6_WBcel235_genomic.fna worm  # For mapping to be successful, we must index the genome, where the worm is the base
+cd ..
+cd mapped/  # Here we store the mapping result.
+hisat2  -x  ../genome/worm -U ../trimmed/SRR776421.trimmed.fastq.gz -S SRR776421.sam  # We put the required parameter -x, made a path to the database, added -U, and then saved the result of our mapping in the SAM format
+samtools view -b SRR776421.sam > SRR776421.bam  # Converting SAM to BAM format. The BAM format takes up less memory
+samtools view -F 0x100 SRR776421.bam | wc -l  # Removing all non-primary alignment, display those that have passed that filter, and count them
+mv SRR776421.bam Ivana_homework.bam  # Renaming BAM file
+cd ..
+history > history_commands.txt  # Saving all performed steps 
+mv history_commands.txt Ivana_homework.txt  #Renaming history of performed steps
+
+
+
